@@ -1,7 +1,0 @@
---// Makes all prompts instant and fires them
-for _, v in ipairs(workspace:GetDescendants()) do
-    if v:IsA("ProximityPrompt") and v.Enabled then
-        v.HoldDuration = -10 -- removes the hold requirement
-        fireproximityprompt(v)
-    end
-end

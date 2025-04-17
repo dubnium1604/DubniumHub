@@ -1,0 +1,26 @@
+-- Instant Interact Script (Optimized)
+-- Makes all prompts instant without spamming workspace scanning
+
+local PromptService = game:GetService("ProximityPromptService")
+
+-- Function to instantly set prompt config
+local function setupPrompt(prompt)
+    if prompt:IsA("ProximityPrompt") then
+        prompt.HoldDuration = 0.01
+        prompt.KeyboardKeyCode = Enum.KeyCode.E
+    end
+end
+
+-- Process existing prompts (without constant looping)
+for _, obj in ipairs(workspace:GetDescendants()) do
+    if obj:IsA("ProximityPrompt") then
+        setupPrompt(obj)
+    end
+end
+
+-- Handle future prompts dynamically
+workspace.DescendantAdded:Connect(function(descendant)
+    if descendant:IsA("ProximityPrompt") then
+        setupPrompt(descendant)
+    end
+end)
