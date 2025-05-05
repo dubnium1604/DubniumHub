@@ -1,0 +1,66 @@
+-- Correct Rayfield Loadstring
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- Create the Rayfield Window
+local Window = Rayfield:CreateWindow({
+    Name = "DubniumHub🤖", -- Title of the window
+    LoadingTitle = "Loading Hub...",
+    LoadingSubtitle = "by dbao🎿, Discord:dubnium1604",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = nil,
+        FileName = "RayfieldHub"
+    },
+    KeySystem = false, -- Optional key system
+    Key = "YourKeyHere" -- Optional key if using key system
+})
+
+-- Create a Tab
+local MainTab = Window:CreateTab("Main", 4483362458) -- You can use an icon ID here
+
+-- Add Button for InventoryESP
+MainTab:CreateButton({
+    Name = "Inventory ESP🎒", -- Button text
+    Callback = function()
+        -- Execute the InventoryESP script
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/dubnium1604/DubniumHub/refs/heads/main/InventoryESP"))()
+    end
+})
+
+-- Add Button for Instant Interact
+MainTab:CreateButton({
+    Name = "Instant Interact👌", -- Button text
+    Callback = function()
+        -- Execute the Instant Interact script
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/dubnium1604/DubniumHub/refs/heads/main/Instant%20Interact%20(REAL%20AND%20BYPASSED%20ONE)"))()
+    end
+})
+
+-- Add Button for Anti-Fly
+MainTab:CreateButton({
+    Name = "Anti-Fly🕊️", -- Button text
+    Callback = function()
+        -- Execute the Anti-Fly script
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/dubnium1604/DubniumHub/refs/heads/main/Anti-Fly"))()
+    end
+})
+
+-- Add Button for Anti-Died
+MainTab:CreateButton({
+    Name = "Anti-Died☠️", -- Button text
+    Callback = function()
+        -- Execute the Anti-Died script
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/dubnium1604/DubniumHub/refs/heads/main/Anti-Died"))()
+    end
+})
+
+-- Add Button for Camlock
+MainTab:CreateButton({
+    Name = "Camlock🎯", -- Button text
+    Callback = function()
+        -- Execute the Camlock script
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/me1al0ne/Scripts/refs/heads/main/PC%20lock"))()
+    end
+})
+
+-- You can keep adding more buttons, sections, and features as needed
