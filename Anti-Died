@@ -34,7 +34,7 @@ screenGui.Name = "TeleporterGUI"
 
 local frame = Instance.new("Frame", screenGui)
 frame.Size = UDim2.new(0, 200, 0, 100)
-frame.Position = UDim2.new(0, 20, 0, 100)
+frame.Position = UDim2.new(1, -220, 0, 100)  -- Right side, 220px from the right edge
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
 frame.BackgroundTransparency = 0.2
