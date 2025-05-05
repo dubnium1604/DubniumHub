@@ -1,0 +1,169 @@
+-- SETTINGS
+local teleportSpeed = 0.01  -- Sky mode teleport speed
+local undergroundSpeed = 0.1  -- Underground mode teleport speed (slower)
+local heightOffset = 30  -- Default height (Sky Mode)
+local radius = 10.5
+
+-- SERVICES
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+-- VARIABLES
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+local teleporting = false
+local centerPosition = hrp.Position
+local antiGravForce = nil
+
+-- NOTIFY FUNCTION
+local function notify(msg)
+    pcall(function()
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "Teleporter",
+            Text = msg,
+            Duration = 3
+        })
+    end)
+end
+
+-- GUI SETUP
+local screenGui = Instance.new("ScreenGui", game.CoreGui)
+screenGui.Name = "TeleporterGUI"
+
+local frame = Instance.new("Frame", screenGui)
+frame.Size = UDim2.new(0, 200, 0, 100)
+frame.Position = UDim2.new(0, 20, 0, 100)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BorderSizePixel = 0
+frame.BackgroundTransparency = 0.2
+
+local skyButton = Instance.new("TextButton", frame)
+skyButton.Size = UDim2.new(1, -20, 0, 40)
+skyButton.Position = UDim2.new(0, 10, 0, 10)
+skyButton.Text = "Sky Mode"
+skyButton.BackgroundColor3 = Color3.fromRGB(60, 60, 200)
+skyButton.TextColor3 = Color3.new(1, 1, 1)
+skyButton.Font = Enum.Font.SourceSansBold
+skyButton.TextSize = 20
+
+local undergroundButton = Instance.new("TextButton", frame)
+undergroundButton.Size = UDim2.new(1, -20, 0, 40)
+undergroundButton.Position = UDim2.new(0, 10, 0, 55)
+undergroundButton.Text = "Underground Mode"
+undergroundButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+undergroundButton.TextColor3 = Color3.new(1, 1, 1)
+undergroundButton.Font = Enum.Font.SourceSansBold
+undergroundButton.TextSize = 20
+
+-- Mode Buttons
+skyButton.MouseButton1Click:Connect(function()
+    heightOffset = 30
+    notify("Mode set to Sky")
+end)
+
+undergroundButton.MouseButton1Click:Connect(function()
+    heightOffset = -30  -- Underground mode (negative Y offset)
+    notify("Mode set to Underground")
+end)
+
+-- TELEPORT POSITION GENERATOR (in a radius, like before)
+local function getTeleportPosition()
+    local angle = math.random() * 2 * math.pi
+    local dist = math.random() * radius
+    local x = math.cos(angle) * dist
+    local z = math.sin(angle) * dist
+    return Vector3.new(centerPosition.X + x, centerPosition.Y + heightOffset, centerPosition.Z + z)
+end
+
+-- MOVE ENTIRE CHARACTER TO POSITION
+local function teleportCharacterTo(position)
+    if character and character:IsA("Model") then
+        character:PivotTo(CFrame.new(position))
+    end
+end
+
+-- APPLY / REMOVE ANTI-GRAVITY
+local function toggleAntiGravity(state)
+    if state then
+        if not antiGravForce then
+            antiGravForce = Instance.new("BodyForce")
+            antiGravForce.Name = "AntiGrav"
+            antiGravForce.Force = Vector3.new(0, workspace.Gravity * hrp:GetMass(), 0)
+            antiGravForce.Parent = hrp
+        end
+    else
+        if antiGravForce then
+            antiGravForce:Destroy()
+            antiGravForce = nil
+        end
+    end
+end
+
+-- TELEPORT LOOP
+local function teleportLoop()
+    while teleporting and hrp and hrp.Parent do
+        local pos = getTeleportPosition()
+        teleportCharacterTo(pos)
+        task.wait(teleportSpeed)  -- Adjust speed as per mode
+    end
+end
+
+-- TELEPORT THROUGH ABOVE GROUND BEFORE UNDERGROUND (Quick Transition)
+-- REPLACE quickTeleportToUnderground FUNCTION WITH THIS:
+local function quickTeleportToUnderground()
+    local aboveGroundPosition = Vector3.new(centerPosition.X, centerPosition.Y + 5, centerPosition.Z)
+
+    hrp.Anchored = true
+    hrp.Velocity = Vector3.zero
+
+    teleportCharacterTo(aboveGroundPosition)
+    task.wait(0.1)
+
+    local undergroundPos = Vector3.new(centerPosition.X, centerPosition.Y + heightOffset, centerPosition.Z)
+    teleportCharacterTo(undergroundPos)
+
+    task.wait(0.2)
+    hrp.Anchored = false
+end
+
+
+
+-- KEYBIND TO TOGGLE TELEPORT
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.Z then
+        teleporting = not teleporting
+        character = player.Character or player.CharacterAdded:Wait()
+        hrp = character:WaitForChild("HumanoidRootPart")
+        
+        if teleporting then
+            centerPosition = hrp.Position
+            local safePos = Vector3.new(centerPosition.X, centerPosition.Y + heightOffset, centerPosition.Z)
+
+            -- Underground Mode: First teleport slightly above ground to avoid no-clip, then to underground
+            if heightOffset < 0 then
+                quickTeleportToUnderground()  -- Quick teleport to above ground, then underground
+            else
+                teleportCharacterTo(safePos)  -- Sky Mode (normal behavior)
+            end
+
+            toggleAntiGravity(true)
+            notify("Teleport ON (" .. (heightOffset > 0 and "Sky" or "Underground") .. " Mode)")
+            task.spawn(teleportLoop)  -- Start the teleport loop for continuous teleporting
+        else
+            toggleAntiGravity(false)
+
+            -- If underground mode, return to the center position
+            if heightOffset < 0 then
+                teleportCharacterTo(centerPosition)
+                notify("Teleport OFF — Returned to original spot")
+            else
+                notify("Teleport OFF")
+            end
+        end
+    end
+end)
+
+notify("Loaded — Press Z to toggle teleport")
