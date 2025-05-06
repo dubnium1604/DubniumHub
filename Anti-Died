@@ -2,7 +2,7 @@
 local teleportSpeed = 0.01  -- Sky mode teleport speed
 local undergroundSpeed = 0.1  -- Underground mode teleport speed (slower)
 local heightOffset = 30  -- Default height (Sky Mode)
-local radius = 10.5
+local radius = 12
 
 -- SERVICES
 local Players = game:GetService("Players")
