@@ -1,8 +1,12 @@
 -- SETTINGS
-local teleportSpeed = 0.01  -- Sky mode teleport speed
-local undergroundSpeed = 0.1  -- Underground mode teleport speed (slower)
-local heightOffset = 30  -- Default height (Sky Mode)
-local radius = 12
+local originalTeleportSpeedSky = 0.01  -- Sky mode teleport speed
+local originalTeleportSpeedUnderground = 0.01  -- Underground mode teleport speed (slower)
+local originalRadius = 12
+local teleportSpeed = originalTeleportSpeedSky
+local heightOffset = 30
+local radius = originalRadius
+local minHp = 16
+local maxHp = 30
 
 -- SERVICES
 local Players = game:GetService("Players")
@@ -13,6 +17,7 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
 local teleporting = false
 local centerPosition = hrp.Position
 local antiGravForce = nil
@@ -34,7 +39,7 @@ screenGui.Name = "TeleporterGUI"
 
 local frame = Instance.new("Frame", screenGui)
 frame.Size = UDim2.new(0, 200, 0, 100)
-frame.Position = UDim2.new(1, -220, 0, 100)  -- Right side, 220px from the right edge
+frame.Position = UDim2.new(1, -220, 0, 100)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
 frame.BackgroundTransparency = 0.2
@@ -60,15 +65,17 @@ undergroundButton.TextSize = 20
 -- Mode Buttons
 skyButton.MouseButton1Click:Connect(function()
     heightOffset = 30
+    teleportSpeed = originalTeleportSpeedSky
     notify("Mode set to Sky")
 end)
 
 undergroundButton.MouseButton1Click:Connect(function()
-    heightOffset = -30  -- Underground mode (negative Y offset)
+    heightOffset = -30
+    teleportSpeed = originalTeleportSpeedUnderground
     notify("Mode set to Underground")
 end)
 
--- TELEPORT POSITION GENERATOR (in a radius, like before)
+-- TELEPORT POSITION GENERATOR
 local function getTeleportPosition()
     local angle = math.random() * 2 * math.pi
     local dist = math.random() * radius
@@ -101,17 +108,29 @@ local function toggleAntiGravity(state)
     end
 end
 
--- TELEPORT LOOP
-local function teleportLoop()
-    while teleporting and hrp and hrp.Parent do
-        local pos = getTeleportPosition()
-        teleportCharacterTo(pos)
-        task.wait(teleportSpeed)  -- Adjust speed as per mode
+-- CHECK HEALTH AND ADJUST RADIUS/SPEED
+local function checkHealthAndAdjust()
+    local hp = humanoid and humanoid.Health or 100
+    if hp <= minHp then
+        radius = 70
+        teleportSpeed = 0.001
+    elseif hp >= maxHp then
+        radius = originalRadius
+        teleportSpeed = (heightOffset > 0) and originalTeleportSpeedSky or originalTeleportSpeedUnderground
     end
 end
 
--- TELEPORT THROUGH ABOVE GROUND BEFORE UNDERGROUND (Quick Transition)
--- REPLACE quickTeleportToUnderground FUNCTION WITH THIS:
+-- TELEPORT LOOP
+local function teleportLoop()
+    while teleporting and hrp and hrp.Parent do
+        checkHealthAndAdjust()
+        local pos = getTeleportPosition()
+        teleportCharacterTo(pos)
+        task.wait(teleportSpeed)
+    end
+end
+
+-- QUICK TELEPORT TO UNDERGROUND
 local function quickTeleportToUnderground()
     local aboveGroundPosition = Vector3.new(centerPosition.X, centerPosition.Y + 5, centerPosition.Z)
 
@@ -128,34 +147,39 @@ local function quickTeleportToUnderground()
     hrp.Anchored = false
 end
 
-
-
--- KEYBIND TO TOGGLE TELEPORT
+-- TOGGLE TELEPORT ON KEY PRESS
 UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     if input.KeyCode == Enum.KeyCode.Z then
         teleporting = not teleporting
         character = player.Character or player.CharacterAdded:Wait()
         hrp = character:WaitForChild("HumanoidRootPart")
-        
+        humanoid = character:WaitForChild("Humanoid")
+
         if teleporting then
             centerPosition = hrp.Position
             local safePos = Vector3.new(centerPosition.X, centerPosition.Y + heightOffset, centerPosition.Z)
 
-            -- Underground Mode: First teleport slightly above ground to avoid no-clip, then to underground
             if heightOffset < 0 then
-                quickTeleportToUnderground()  -- Quick teleport to above ground, then underground
+                quickTeleportToUnderground()
             else
-                teleportCharacterTo(safePos)  -- Sky Mode (normal behavior)
+                teleportCharacterTo(safePos)
             end
 
             toggleAntiGravity(true)
             notify("Teleport ON (" .. (heightOffset > 0 and "Sky" or "Underground") .. " Mode)")
-            task.spawn(teleportLoop)  -- Start the teleport loop for continuous teleporting
+
+            task.spawn(teleportLoop)
+
+            -- Continuously monitor health
+            task.spawn(function()
+                while teleporting do
+                    checkHealthAndAdjust()
+                    task.wait(0.2)
+                end
+            end)
         else
             toggleAntiGravity(false)
-
-            -- If underground mode, return to the center position
             if heightOffset < 0 then
                 teleportCharacterTo(centerPosition)
                 notify("Teleport OFF — Returned to original spot")
