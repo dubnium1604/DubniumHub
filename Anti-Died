@@ -112,7 +112,7 @@ end
 local function checkHealthAndAdjust()
     local hp = humanoid and humanoid.Health or 100
     if hp <= minHp then
-        radius = 70
+        radius = 100
         teleportSpeed = 0.001
     elseif hp >= maxHp then
         radius = originalRadius
